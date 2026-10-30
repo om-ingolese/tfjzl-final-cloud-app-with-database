@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{{ course.name }}</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<nav class="navbar navbar-light bg-light">
+    <a class="navbar-brand" href="{% url 'onlinecourse:index' %}">Online Course</a>
+    {% if user.is_authenticated %}<span>{{ user.username }} | <a href="{% url 'onlinecourse:logout' %}">Logout</a></span>{% endif %}
+</nav>
+<main class="container my-4">
+    <h2>{{ course.name }}</h2>
+    <p>{{ course.description }}</p>
+    {% if user.is_authenticated and not is_enrolled %}
+    <a class="btn btn-success mb-3" href="{% url 'onlinecourse:enroll' course.id %}">Enroll in this course</a>
+    {% endif %}
+    <h4 class="mt-4">Course lessons</h4>
+    {% for lesson in course.lesson_set.all %}
+    <div class="card mb-2"><div class="card-header">Lesson {{ lesson.order|add:1 }}: {{ lesson.title }}</div><div class="card-body">{{ lesson.content }}</div></div>
+    {% empty %}<p>No lessons have been added yet.</p>{% endfor %}
+
+    <hr>
+    <h4>Course assessment</h4>
+    {% if user.is_authenticated and is_enrolled %}
+        {% if course.question_set.exists %}
+            <form method="post" action="{% url 'onlinecourse:submit' course.id %}">
+                {% csrf_token %}
+                {% for question in course.question_set.all %}
+                <div class="card mb-3"><div class="card-header">{{ forloop.counter }}. {{ question.question_text }} <span class="badge badge-secondary">{{ question.grade }} point(s)</span></div>
+                    <div class="card-body">
+                    {% for choice in question.choice_set.all %}
+                    <div class="form-check"><input class="form-check-input" type="radio" name="choice_{{ question.id }}" id="choice_{{ choice.id }}" value="{{ choice.id }}"><label class="form-check-label" for="choice_{{ choice.id }}">{{ choice.choice_text }}</label></div>
+                    {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">Submit assessment</button>
+            </form>
+        {% else %}<p>No assessment questions are available yet.</p>{% endif %}
+    {% elif user.is_authenticated %}<p>Enroll in this course to take the assessment.</p>
+    {% else %}<p><a href="{% url 'onlinecourse:login' %}">Log in</a> to take the assessment.</p>{% endif %}
+</main>
+</body>
+</html>
